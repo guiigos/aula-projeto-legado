@@ -1,7 +1,6 @@
 from django.urls import path
 
-from .views import handle_cliente, handle_cliente_by_id
-from .views import handle_veiculo, handle_veiculo_by_id
+from .views import *
 
 urlpatterns = [
     path('clientes', handle_cliente),
@@ -9,7 +8,11 @@ urlpatterns = [
 
     path('veiculos', handle_veiculo),
     path('veiculos/<int:id>', handle_veiculo_by_id),
+
+    path('permanencias', handle_permanencia),
+    path('permanencias/<int:id>/saida', handle_permanencia_by_id),
+    path('permanencias/entrada', handle_permanencia)
+
 ]
+    
 
-
-# aq tem os endpoints

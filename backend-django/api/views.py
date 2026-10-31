@@ -4,7 +4,6 @@ from django.http import JsonResponse, HttpResponseBadRequest
 from .veiculo import VeiculoEndPoints
 from django.http import JsonResponse
 
-# aq tem as func de redirect pra cada parte do projeto
 
 def handle_cliente(request):
     if request.method == 'GET':
@@ -56,6 +55,28 @@ def handle_veiculo_by_id(request, id):
 
     if request.method == 'DELETE':
         return VeiculoEndPoints.delete_veiculo_by_id(request, id)
+
+    return JsonResponse(
+        {'erro': 'Método não permitido'},
+        status=405
+    )
+
+def handle_permanencia(request):
+    if request.method == 'GET':
+        return PermanenciaEndPoints.get_permanencias(request)
+
+    if request.method == 'POST':
+        return PermanenciaEndPoints.post_permanencias(request)
+
+    return JsonResponse(
+        {'erro': 'Método não permitido'},
+        status=405
+    )
+
+
+def handle_permanencia_by_id(request, id):
+    if request.method == 'PUT':
+        return PermanenciaEndPoints.put_permanencia_by_id(request, id)
 
     return JsonResponse(
         {'erro': 'Método não permitido'},
