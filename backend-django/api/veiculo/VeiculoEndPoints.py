@@ -1,3 +1,4 @@
+import sqlite3
 import json
 
 from ..models import Veiculo
@@ -5,7 +6,7 @@ from django.http import JsonResponse, HttpResponse
 from django.shortcuts import get_object_or_404
 from ..models import Veiculo, Cliente
 
-def get_veiculos(request):
+def get_veiculos():
     veiculos = Veiculo.objects.all()
 
     dados = [
@@ -18,25 +19,34 @@ def get_veiculos(request):
 def post_veiculos(request):
     body = json.loads(request.body)
 
-    veiculo = Veiculo()
-    for value in('placa', 'marca', 'modelo', 'cor'):
-        setattr(veiculo, value, body.get(value))
+    resultado = validar(body)
+    if resultado is not None:
+        return resultado
+
+    veiculo = Veiculo(
+        placa = body.get("placa"),
+        marca = body.get("marca"),
+        modelo = body.get("modelo"),
+        cor = body.get("cor"),
+    )
 
     cliente_id = body.get('clienteId')
     veiculo.cliente = get_object_or_404(Cliente, id=cliente_id)
 
-    veiculo.save()
-    return JsonResponse({
-            'mensagem': 'Veículo cadastrado com sucesso',
-            'id': veiculo.id
-    }, status=201)
+    try:
+        veiculo.save()
+        return JsonResponse(veiculo_to_dict(veiculo), status=201)
+    except sqlite3.IntegrityError:
+        return JsonResponse({
+            "message": "Placa já cadastrada"
+        }, status=409)
 
-def get_veiculo_by_id(request, id):
+def get_veiculo_by_id(id):
     veiculo = get_object_or_404(Veiculo, id=id)
 
     return JsonResponse(veiculo_to_dict(veiculo), status=200)
 
-def delete_veiculo_by_id(request, id):
+def delete_veiculo_by_id(id):
     veiculo = get_object_or_404(Veiculo, id=id)
     veiculo.delete()
     return HttpResponse(status=204)
@@ -45,12 +55,30 @@ def put_veiculo_by_id(request, id):
     veiculo = get_object_or_404(Veiculo, id=id)
     body = json.loads(request.body)
 
+    resultado = validar(body)
+    if resultado is not None:
+        return resultado
+
     for value in ('placa', 'marca', 'modelo', 'cor'):
         setattr(veiculo, value, body.get(value))
 
     veiculo.save()
     return JsonResponse(veiculo_to_dict(veiculo), status=200)
 
+def validar(body):
+    if not body.get('placa'):
+        return JsonResponse({"mensagem": "Campo 'placa' é obrigatório"}, status=400)
+    if not body.get('marca'):
+        return JsonResponse({"mensagem": "Campo 'marca' é obrigatório"}, status=400)
+    if not body.get('modelo'):
+        return JsonResponse({"mensagem": "Campo 'modelo' é obrigatório"}, status=400)
+    if not body.get('cor'):
+        return JsonResponse({"mensagem": "Campo 'cor' é obrigatório"}, status=400)
+    if not body.get('clienteId'):
+        return JsonResponse({"mensagem": "Campo 'clienteId' é obrigatório"}, status=400)
+    
+    return None
+        
 def veiculo_to_dict(veiculo):
     return {
         'id': veiculo.id,
