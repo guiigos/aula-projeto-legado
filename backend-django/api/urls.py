@@ -3,6 +3,8 @@ from django.urls import path
 from .views import *
 
 urlpatterns = [
+    path('dashboard', handle_dashboard),
+    
     path('clientes', handle_cliente),
     path('clientes/<int:id>', handle_cliente_by_id),
 

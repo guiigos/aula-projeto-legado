@@ -1,10 +1,19 @@
 from django.http import JsonResponse, HttpResponseBadRequest
 
+from .dashboard import DashboardEndPoints
 from .cliente import ClientEndPoints
 from .veiculo import VeiculoEndPoints
 from .vaga import VagaEndPoints 
 from .permanencia import PermanenciaEndPoints
 
+def handle_dashboard(request):
+    if request.method == 'GET':
+        return DashboardEndPoints.get_dashboard_data(request)
+
+    return JsonResponse(
+            {'erro': 'Metodo nao permitido'},
+            status=405
+        )
 
 def handle_cliente(request):
     if request.method == 'GET':
