@@ -45,7 +45,7 @@ def handle_cliente_by_id(request, id=None):
 
 def handle_veiculo(request):
     if request.method == 'GET':
-        return VeiculoEndPoints.get_veiculos(request)
+        return VeiculoEndPoints.get_veiculos()
 
     if request.method == 'POST':
         return VeiculoEndPoints.post_veiculos(request)
@@ -57,13 +57,13 @@ def handle_veiculo(request):
 
 def handle_veiculo_by_id(request, id):
     if request.method == 'GET':
-        return VeiculoEndPoints.get_veiculo_by_id(request, id)
+        return VeiculoEndPoints.get_veiculo_by_id(id)
 
     if request.method == 'PUT':
         return VeiculoEndPoints.put_veiculo_by_id(request, id)
 
     if request.method == 'DELETE':
-        return VeiculoEndPoints.delete_veiculo_by_id(request, id)
+        return VeiculoEndPoints.delete_veiculo_by_id(id)
 
     return JsonResponse(
         {'erro': 'Método não permitido'},

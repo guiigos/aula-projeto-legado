@@ -1,6 +1,6 @@
 import json
-import sqlite3
 
+from django.db import IntegrityError
 from django.shortcuts import get_object_or_404
 
 from ..models import Cliente
@@ -34,13 +34,11 @@ def post_clientes(request):
 
     try:
         cliente.save()
-        return JsonResponse({ 
-            cliente_to_dict(cliente)
-        }, status=201)
+        return JsonResponse(cliente_to_dict(cliente), status=201)
     
-    except sqlite3.IntegrityError:
+    except IntegrityError:
         return JsonResponse({
-            "message": "CPF já cadastrado"
+            "error": "CPF já cadastrado"
         }, status=409)
 
 
@@ -66,9 +64,9 @@ def put_cliente_by_id(request, id):
         cliente.save()
         return JsonResponse(cliente_to_dict(cliente), status=200)
 
-    except sqlite3.InternalError:
+    except IntegrityError:
         return JsonResponse({
-            "message": "Internal error"
+            "error": "CPF já cadastrado"
         }, status=500)
 
 def delete_cliente_by_id(id):
@@ -78,7 +76,7 @@ def delete_cliente_by_id(id):
         cliente.delete()
         return HttpResponse(status=204)
     
-    except sqlite3.IntegrityError:
+    except IntegrityError:
         return JsonResponse({
             "mensagem": "Não é possível excluir cliente com veículos cadastrados"
             }, status=409)

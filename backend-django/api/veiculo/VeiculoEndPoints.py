@@ -1,6 +1,6 @@
-import sqlite3
 import json
 
+from django.db import IntegrityError
 from ..models import Veiculo
 from django.http import JsonResponse, HttpResponse
 from django.shortcuts import get_object_or_404
@@ -36,9 +36,9 @@ def post_veiculos(request):
     try:
         veiculo.save()
         return JsonResponse(veiculo_to_dict(veiculo), status=201)
-    except sqlite3.IntegrityError:
+    except IntegrityError:
         return JsonResponse({
-            "message": "Placa já cadastrada"
+            "error": "Placa já cadastrada"
         }, status=409)
 
 def get_veiculo_by_id(id):
