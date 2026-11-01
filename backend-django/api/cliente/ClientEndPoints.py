@@ -1,11 +1,11 @@
 import json
+import sqlite3
 
 from django.shortcuts import get_object_or_404
 
 from ..models import Cliente
 from django.http import JsonResponse, HttpResponse
 
-# aq é a logica
 def get_clientes():
     clientes = Cliente.objects.all()
 
@@ -19,16 +19,30 @@ def get_clientes():
 def post_clientes(request):
     body = json.loads(request.body)
 
-    cliente = Cliente()
+    if not body.get('nome'):
+        return JsonResponse({"mensagem": "Campo 'nome' é obrigatório"}, status=400)
+    if not body.get('cpf'):
+        return JsonResponse({"mensagem": "Campo 'cpf' é obrigatório"}, status=400)
 
-    for value in ('nome', 'cpf', 'telefone', 'email'):
-        setattr(cliente, value, body.get(value))
 
-    cliente.save()
-    return JsonResponse({
-        'mensagem': 'Cliente cadastrado com sucesso',
-        'id': cliente.id
-    }, status=201)
+    cliente = Cliente(
+        nome=body.get('nome'),
+        cpf=body.get('cpf'),
+        telefone=body.get('telefone'),
+        email=body.get('email'),
+    )
+
+    try:
+        cliente.save()
+        return JsonResponse({ 
+            cliente_to_dict(cliente)
+        }, status=201)
+    
+    except sqlite3.IntegrityError:
+        return JsonResponse({
+            "message": "CPF já cadastrado"
+        }, status=409)
+
 
 def get_cliente_by_id(id):
     cliente = get_object_or_404(Cliente, id=id)
@@ -39,17 +53,35 @@ def put_cliente_by_id(request, id):
     cliente = get_object_or_404(Cliente, id=id)
     body = json.loads(request.body)
 
-    for value in ('nome', 'cpf', 'telefone', 'email'):
-        setattr(cliente, value, body.get(value))
+    if not body.get('nome'):
+        return JsonResponse({"mensagem": "Campo 'nome' é obrigatório"}, status=400)
+    if not body.get('cpf'):
+        return JsonResponse({"mensagem": "Campo 'cpf' é obrigatório"}, status=400)
 
-    cliente.save()
-    return JsonResponse(cliente_to_dict(cliente), status=200)
+    for value in ('nome', 'cpf', 'telefone', 'email'):
+        if value in body:
+            setattr(cliente, value, body.get(value))
+
+    try:
+        cliente.save()
+        return JsonResponse(cliente_to_dict(cliente), status=200)
+
+    except sqlite3.InternalError:
+        return JsonResponse({
+            "message": "Internal error"
+        }, status=500)
 
 def delete_cliente_by_id(id):
     cliente = get_object_or_404(Cliente, id=id)
-    cliente.delete()
 
-    return HttpResponse(status=204)
+    try:
+        cliente.delete()
+        return HttpResponse(status=204)
+    
+    except sqlite3.IntegrityError:
+        return JsonResponse({
+            "mensagem": "Não é possível excluir cliente com veículos cadastrados"
+            }, status=409)
 
 def cliente_to_dict(cliente):
     return {
