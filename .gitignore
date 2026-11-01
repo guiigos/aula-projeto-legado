@@ -1,0 +1,6 @@
+target/
+.idea/
+.venv/
+__pycache__/
+db.sqlite3
+dependency-reduced-pom.xml

@@ -1,45 +1,15 @@
 services:
-
-  # ── PostgreSQL ──────────────────────────────────────────────────────────────
-  postgres:
-    image: postgres:15-alpine
-    container_name: estacionamento-db
-    environment:
-      POSTGRES_DB:       estacionamento
-      POSTGRES_USER:     postgres
-      POSTGRES_PASSWORD: postgres
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
-    ports:
-      - "5432:5432"
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d estacionamento"]
-      interval: 5s
-      timeout: 5s
-      retries: 12
-    restart: unless-stopped
-
-  # ── Backend Java 8 ──────────────────────────────────────────────────────────
   backend:
     build:
-      context: ./backend
+      context: ./backend-django
       dockerfile: Dockerfile
     container_name: estacionamento-backend
-    environment:
-      DB_HOST:     postgres
-      DB_PORT:     5432
-      DB_NAME:     estacionamento
-      DB_USER:     postgres
-      DB_PASSWORD: postgres
     ports:
       - "8080:8080"
-    depends_on:
-      postgres:
-        condition: service_healthy
+    volumes:
+      - sqlite_data:/app/data
     restart: unless-stopped
 
-  # ── Frontend Nginx ──────────────────────────────────────────────────────────
   frontend:
     build:
       context: ./frontend
@@ -52,4 +22,4 @@ services:
     restart: unless-stopped
 
 volumes:
-  postgres_data:
+  sqlite_data:
