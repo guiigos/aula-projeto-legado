@@ -1,8 +1,5 @@
 from django.urls import path
 
-from .views import handle_vaga, handle_vaga_by_id
-
-
 from .views import *
 
 urlpatterns = [

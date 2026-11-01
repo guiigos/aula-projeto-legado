@@ -87,6 +87,12 @@ class Permanencia(models.Model):
     blank=True
     )
 
+    status = models.CharField(
+        max_length=10,
+        choices=Status.choices,
+        default=Status.ABERTO
+    )
+
     class Meta:
         db_table = 'permanencias'
 
