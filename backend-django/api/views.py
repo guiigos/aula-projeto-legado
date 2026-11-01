@@ -1,8 +1,9 @@
-from .cliente import ClientEndPoints
 from django.http import JsonResponse, HttpResponseBadRequest
 
+from .cliente import ClientEndPoints
 from .veiculo import VeiculoEndPoints
-from django.http import JsonResponse
+from .vaga import VagaEndPoints 
+from .permanencia import PermanenciaEndPoints
 
 
 def handle_cliente(request):
@@ -45,7 +46,6 @@ def handle_veiculo(request):
         status=405
     )
 
-
 def handle_veiculo_by_id(request, id):
     if request.method == 'GET':
         return VeiculoEndPoints.get_veiculo_by_id(request, id)
@@ -73,7 +73,6 @@ def handle_permanencia(request):
         status=405
     )
 
-
 def handle_permanencia_by_id(request, id):
     if request.method == 'PUT':
         return PermanenciaEndPoints.put_permanencia_by_id(request, id)
@@ -82,3 +81,32 @@ def handle_permanencia_by_id(request, id):
         {'erro': 'Método não permitido'},
         status=405
     )
+
+def handle_vaga(request):
+    if request.method == 'GET':
+        return VagaEndPoints.get_vagas(request)
+
+    if request.method == 'POST':
+        return VagaEndPoints.post_vagas(request)
+
+    return JsonResponse(
+        {'error': 'Método não permitido'},
+        status=405
+    )
+
+def handle_vaga_by_id(request, id):
+    if request.method == 'GET':
+        return VagaEndPoints.get_vaga_by_id(request, id)
+
+    if request.method == 'PUT':
+        return VagaEndPoints.put_vaga_by_id(request, id)
+
+    if request.method == 'DELETE':
+        return VagaEndPoints.delete_vaga_by_id(request, id)
+
+    return JsonResponse(
+        {'error': 'Método não permitido'},
+        status=405
+    )
+
+
