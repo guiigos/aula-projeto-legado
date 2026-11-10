@@ -2,7 +2,11 @@ import json
 
 from django.http import JsonResponse
 
-from api.services.permanencia_service import RecursoNaoEncontrado, registrar_entrada
+from api.services.permanencia_service import (
+    RecursoNaoEncontrado,
+    registrar_entrada,
+    registrar_saida,
+)
 
 
 def permanencia_to_dict(permanencia):
@@ -49,3 +53,19 @@ def entrada(request):
         return JsonResponse({'error': str(erro)}, status=409)
 
     return JsonResponse(permanencia_to_dict(permanencia), status=201)
+
+
+def saida(request, id):
+    if request.method != 'PUT':
+        response = JsonResponse({'error': 'Método não permitido'}, status=405)
+        response['Allow'] = 'PUT, OPTIONS'
+        return response
+
+    try:
+        permanencia = registrar_saida(id)
+    except RecursoNaoEncontrado as erro:
+        return JsonResponse({'error': str(erro)}, status=404)
+    except ValueError as erro:
+        return JsonResponse({'error': str(erro)}, status=409)
+
+    return JsonResponse(permanencia_to_dict(permanencia))
