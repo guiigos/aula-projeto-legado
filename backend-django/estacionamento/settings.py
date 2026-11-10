@@ -55,6 +55,8 @@ DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
         'NAME': os.environ.get('DB_PATH', BASE_DIR / 'db.sqlite3'),
+        # Reserva a escrita antes das verificações feitas em transaction.atomic.
+        'OPTIONS': {'transaction_mode': 'IMMEDIATE'},
     }
 }
 
