@@ -2,6 +2,7 @@ import json
 
 from django.http import JsonResponse
 
+from api.models import Permanencia
 from api.services.permanencia_service import (
     RecursoNaoEncontrado,
     registrar_entrada,
@@ -24,6 +25,22 @@ def permanencia_to_dict(permanencia):
         'valorTotal': float(valor) if valor is not None else None,
         'status': permanencia.status,
     }
+
+
+def lista_permanencias(request):
+    if request.method != 'GET':
+        response = JsonResponse({'error': 'Método não permitido'}, status=405)
+        response['Allow'] = 'GET, OPTIONS'
+        return response
+
+    permanencias = Permanencia.objects.select_related('veiculo', 'vaga').order_by(
+        '-data_hora_entrada', '-id'
+    )
+    status = request.GET.get('status')
+    if status:
+        permanencias = permanencias.filter(status=status)
+
+    return JsonResponse([permanencia_to_dict(p) for p in permanencias], safe=False)
 
 
 def entrada(request):
