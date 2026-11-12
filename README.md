@@ -1,188 +1,86 @@
 # Sistema de Estacionamento
 
-Aplicação web completa para gerenciamento de estacionamento desenvolvida com:
+Backend migrado de Java 8 para Python 3.11 e Django 5.2, com SQLite.
+O frontend HTML, CSS e JavaScript original usa a API pelo proxy Nginx.
 
-- **Backend**: Java 8 puro (`HttpServer` nativo + JDBC + Gson)
-- **Frontend**: HTML5, CSS3, Vanilla JavaScript
-- **Banco de dados**: PostgreSQL
-- **Infraestrutura**: Docker Compose + Nginx
+## Executar com Docker
 
----
-
-## Pré-requisitos
-
-- Docker >= 20.x
-- Docker Compose >= 2.x
-
----
-
-## Executar o projeto
+Com o Docker Desktop aberto, na raiz do projeto:
 
 ```bash
 docker compose up --build -d
 ```
 
-A primeira execução faz o download das imagens e compila o backend com Maven (~3 min).
+- Frontend em http://localhost:3000
+- API em http://localhost:8080/api/status
+- Dois serviços, backend Django e frontend Nginx.
 
-| Serviço     | Endereço                     |
-|-------------|------------------------------|
-| Frontend    | http://localhost:3000        |
-| Backend API | http://localhost:8080        |
-| PostgreSQL  | localhost:5432               |
-
----
-
-## Parar os containers
+O backend executa `python manage.py migrate --noinput` na inicialização.
+As migrations criam as tabelas e as 15 vagas iniciais (A01–A10 e B01–B05).
+O volume `sqlite_data` guarda o arquivo `/app/data/db.sqlite3`.
 
 ```bash
+docker compose restart
+docker compose logs -f backend
 docker compose down
 ```
 
-Para remover os dados do banco junto:
+`restart` e `down` preservam o volume. `docker compose down -v` apaga o banco SQLite.
+
+## Executar o backend localmente
+
+Requer Python 3.11 ou superior. Na raiz do projeto:
 
 ```bash
-docker compose down -v
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install -r backend-django/requirements.txt
+cd backend-django
+python manage.py migrate
+python manage.py runserver 8080
 ```
 
----
+No Windows, ative o ambiente com `.venv\Scripts\activate` no lugar do comando `source`.
+
+O frontend usa URLs relativas. Para usar as telas, prefira o Docker com Nginx.
+O servidor Django local fornece a API. Pare o backend Docker antes de usar a mesma porta localmente.
+
+## Testes
+
+```bash
+cd backend-django
+../.venv/bin/python manage.py check
+../.venv/bin/python manage.py makemigrations --check --dry-run
+../.venv/bin/python manage.py test api
+```
+
+No Windows, com o ambiente ativado, use `python manage.py ...`.
+
+Os testes usam um banco separado. Cobrem CRUD, duplicidades, recursos inexistentes,
+relacionamentos, CORS, dashboard, entrada, saída, cobrança e rollback.
 
 ## Estrutura
 
-```
-estacionamento/
-├── backend/          Java 8 — API REST
-│   ├── src/
-│   ├── pom.xml
-│   └── Dockerfile
-├── frontend/         HTML + CSS + JS — Nginx
-│   ├── index.html
-│   ├── css/
-│   ├── js/
-│   ├── nginx.conf
-│   └── Dockerfile
-├── database/
-│   └── init.sql      Schema + dados iniciais
-├── docker-compose.yml
-└── .env.example
-```
-
----
-
-## Execução local (sem Docker)
-
-### Pré-requisitos
-
-| Ferramenta | Versão mínima | Download |
-|------------|---------------|---------|
-| JDK | 8 | https://adoptium.net |
-| Maven | 3.6 | https://maven.apache.org/download.cgi |
-| PostgreSQL | 13+ | https://www.postgresql.org/download |
-| Nginx | qualquer | https://nginx.org/en/download.html (Mac: `brew install nginx`) |
-
----
-
-### 1. Banco de dados
-
-**Mac (Homebrew)**
-```bash
-brew install postgresql@15
-brew services start postgresql@15
-createdb estacionamento
-psql estacionamento < database/init.sql
+```text
+backend-django/
+  api/
+    models.py
+    migrations/
+    views/
+    services/permanencia_service.py
+  estacionamento/
+    settings.py
+    urls.py
+    middleware.py
+  manage.py
+  requirements.txt
+  Dockerfile
+frontend/
+docker-compose.yml
 ```
 
-**Windows**
-```
-# Após instalar o PostgreSQL, abra o psql como postgres:
-psql -U postgres
-CREATE DATABASE estacionamento;
-\q
-psql -U postgres -d estacionamento -f database\init.sql
-```
-
----
-
-### 2. Backend
-
-Dentro da pasta `backend/`:
-
-**Mac**
-```bash
-export DB_HOST=localhost
-export DB_PORT=5432
-export DB_NAME=estacionamento
-export DB_USER=postgres
-export DB_PASSWORD=postgres
-
-mvn package -DskipTests
-java -jar target/estacionamento.jar
-```
-
-**Windows (cmd)**
-```cmd
-set DB_HOST=localhost
-set DB_PORT=5432
-set DB_NAME=estacionamento
-set DB_USER=postgres
-set DB_PASSWORD=postgres
-
-mvn package -DskipTests
-java -jar target\estacionamento.jar
-```
-
-**Windows (PowerShell)**
-```powershell
-$env:DB_HOST     = "localhost"
-$env:DB_PORT     = "5432"
-$env:DB_NAME     = "estacionamento"
-$env:DB_USER     = "postgres"
-$env:DB_PASSWORD = "postgres"
-
-mvn package -DskipTests
-java -jar target\estacionamento.jar
-```
-
-A API estará disponível em `http://localhost:8080`.
-
----
-
-### 3. Frontend
-
-O frontend usa URLs relativas (`/api/...`), então precisa de um servidor que faça proxy das chamadas para o backend. Use o Nginx com o arquivo de configuração já incluso.
-
-**Mac**
-```bash
-# Edite nginx.conf e troque "backend:8080" por "127.0.0.1:8080"
-sed -i '' 's/backend:8080/127.0.0.1:8080/' frontend/nginx.conf
-
-nginx -p "$PWD/frontend" -c "$PWD/frontend/nginx.conf"
-```
-
-**Windows**
-
-Edite `frontend\nginx.conf` e troque `backend:8080` por `127.0.0.1:8080`, depois:
-```cmd
-cd frontend
-nginx -p . -c nginx.conf
-```
-
-O frontend estará disponível em `http://localhost:3000`.
-
-Para parar o Nginx:
-```bash
-# Mac
-nginx -s stop
-
-# Windows
-nginx -s stop
-```
-
-> **Sem Nginx:** abra `frontend/index.html` no navegador e edite a primeira linha de
-> `frontend/js/api.js`, adicionando `const BASE = 'http://localhost:8080'` e
-> prefixando todas as chamadas com `BASE`. O backend já aceita requisições
-> cross-origin (`Access-Control-Allow-Origin: *`).
-
----
+`backend/` e `database/` guardam a implementação Java e o SQL de referência.
+O Compose usa `backend-django/`.
 
 ## API REST
 
@@ -195,6 +93,7 @@ nginx -s stop
 | PUT    | /api/clientes/{id}              | Atualizar cliente       |
 | DELETE | /api/clientes/{id}              | Excluir cliente         |
 | GET    | /api/veiculos                   | Listar veículos         |
+| GET    | /api/veiculos/{id}              | Buscar veículo          |
 | POST   | /api/veiculos                   | Cadastrar veículo       |
 | PUT    | /api/veiculos/{id}              | Atualizar veículo       |
 | DELETE | /api/veiculos/{id}              | Excluir veículo         |
@@ -212,16 +111,23 @@ nginx -s stop
 
 ## Regras de negócio
 
-- Tarifa: **R$ 5,00/hora** — mínimo 1 hora, frações arredondadas para cima
-- Entrada bloqueada se o veículo já tiver uma permanência aberta
-- Entrada bloqueada se a vaga estiver ocupada
-- Transações JDBC garantem integridade nas operações de entrada/saída
-- `SELECT FOR UPDATE` evita condições de corrida em requisições simultâneas
+- Tarifa de R$ 5,00 por hora, mínimo de uma hora e frações arredondadas para cima.
+- Cálculo monetário com `Decimal` e persistência com `DecimalField`.
+- Veículo com permanência aberta e vaga ocupada bloqueiam uma nova entrada.
+- Entrada e saída usam `transaction.atomic` para confirmar as alterações em conjunto.
+- O SQLite usa transações `IMMEDIATE` para coordenar requisições concorrentes.
+- O histórico protege a exclusão de veículos e vagas associados.
+- Uma vaga com permanência aberta deve ser liberada pelo registro de saída.
+- Campos obrigatórios e JSON inválido retornam 400, inexistentes 404 e conflitos 409.
+- A API aceita URLs com e sem barra final e usa os campos JSON esperados pelas telas.
+- CORS e preflight OPTIONS são implementados por middleware.
+- O projeto usa Django e a biblioteca padrão do Python, com as dependências internas do Django.
+- As views verificam os métodos HTTP manualmente e usam serialização manual.
+- Datas usam `USE_TZ = False` e `America/Sao_Paulo`.
 
----
+## Ambiente de desenvolvimento
 
-## Logs do backend
-
-```bash
-docker compose logs -f backend
-```
+O Docker usa o servidor de desenvolvimento do Django, conforme a atividade.
+`DB_PATH` permite mudar o caminho do SQLite.
+`DJANGO_SECRET_KEY` permite definir a chave do projeto.
+O banco local e o ambiente virtual ficam fora do Git.
