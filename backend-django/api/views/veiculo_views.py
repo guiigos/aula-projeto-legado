@@ -62,7 +62,7 @@ def _ler_dados(request):
             )
 
     cliente_id = dados['clienteId']
-    if type(cliente_id) is not int or cliente_id <= 0:
+    if type(cliente_id) is not int or not 1 <= cliente_id <= 2**63 - 1:
         return None, JsonResponse(
             {'error': "Campo 'clienteId' deve ser um ID inteiro positivo"},
             status=400,
@@ -159,11 +159,17 @@ def excluir_veiculo(request, id):
 
 
 def detalhe_veiculo(request, id):
+    if request.method == 'GET':
+        try:
+            veiculo = Veiculo.objects.select_related('cliente').get(pk=id)
+        except Veiculo.DoesNotExist:
+            return JsonResponse({'error': 'Veículo não encontrado.'}, status=404)
+        return JsonResponse(veiculo_to_dict(veiculo))
     if request.method == 'PUT':
         return atualizar_veiculo(request, id)
     if request.method == 'DELETE':
         return excluir_veiculo(request, id)
-    return _erro_metodo(['PUT', 'DELETE'])
+    return _erro_metodo(['GET', 'PUT', 'DELETE'])
 
 
 def colecao_veiculos(request):
